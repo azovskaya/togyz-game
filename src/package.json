@@ -1,0 +1,8 @@
+{
+  "name": "togyz-game-render-entry",
+  "private": true,
+  "description": "Точка входа для Render, если Root Directory = src",
+  "scripts": {
+    "build": "npm --prefix .. install && npm --prefix .. run build && rm -rf dist && cp -r ../dist dist"
+  }
+}

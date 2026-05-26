@@ -1,0 +1,55 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --steppe-night: #0c0804;
+  --steppe-dusk: #1a1208;
+  --felt-brown: #2a1a0c;
+  --wood-dark: #1a0c04;
+  --wood-mid: #3d2610;
+  --wood-light: #5c3a1e;
+  --khan-gold: #c9a227;
+  --khan-gold-bright: #e8c96a;
+  --khan-crimson: #8b2635;
+  --khan-crimson-light: #c44d5a;
+  --kumalak-bone: #e8e0d4;
+  --kumalak-stone: #5a5248;
+  --text-warm: #d4b896;
+  --text-muted: #8c6b4a;
+
+  font-family: "Philosopher", "Segoe UI", Georgia, serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--steppe-night);
+  color: var(--text-warm);
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+  margin: 0;
+  text-align: center;
+  border: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--khan-gold);
+  outline-offset: 2px;
+}

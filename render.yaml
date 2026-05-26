@@ -1,0 +1,6 @@
+# Если создаёте сайт заново через Blueprint — эти настройки подхватятся сами.
+# Для уже существующего сайта см. README (раздел Deploy).
+staticSites:
+  - name: togyz-game
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
