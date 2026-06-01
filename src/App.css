@@ -386,41 +386,78 @@
 
 .wood-board__body {
   display: flex;
-  align-items: stretch;
-  gap: 8px;
-  padding: 8px 4px;
-}
-
-.wood-board__center {
-  flex: 1;
-  display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-width: 0;
+  gap: 0;
+  padding: 6px 8px 10px;
 }
 
+/* Классическая доска: 2 ряда отау + казаны-борозды между ними (Mancala World / ислам. центр. Азия) */
 .pit-row {
   display: flex;
   justify-content: center;
-  gap: clamp(3px, 1vw, 7px);
-  padding: 6px 4px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.22) 100%);
-  box-shadow: inset 0 4px 14px rgba(0, 0, 0, 0.35);
+  gap: clamp(4px, 1.1vw, 8px);
+  padding: 10px 6px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 0, 0, 0.18) 100%
+  );
+  box-shadow: inset 0 3px 12px rgba(0, 0, 0, 0.35);
 }
 
-/* ─── Kazan chalices (edges) ───────────────────────────────────────────────── */
+.pit-row--far {
+  border-radius: 12px 12px 4px 4px;
+}
+
+.pit-row--near {
+  border-radius: 4px 4px 12px 12px;
+}
+
+.board-kazan-channel {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 0 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(60, 40, 24, 0.5) 50%,
+    rgba(0, 0, 0, 0.25) 100%
+  );
+  border-top: 1px solid rgba(232, 197, 106, 0.15);
+  border-bottom: 1px solid rgba(232, 197, 106, 0.15);
+  box-shadow:
+    inset 0 6px 16px rgba(0, 0, 0, 0.45),
+    inset 0 -4px 10px rgba(255, 220, 180, 0.04);
+}
+
+.board-kazan-channel__furrow {
+  width: 3px;
+  align-self: stretch;
+  margin: 4px 0;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent, #5c4030 30%, #5c4030 70%, transparent);
+  opacity: 0.7;
+}
+
+/* ─── Казаны в центре (вырезанные борозды) ─────────────────────────────────── */
 
 .kazan-chalice {
-  flex: 0 0 clamp(56px, 14vw, 72px);
+  flex: 1;
+  max-width: 120px;
+  min-width: 72px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 6px 4px;
-  border-radius: 14px 14px 18px 18px;
-  background: linear-gradient(165deg, #3d2a1e 0%, #1a100a 100%);
-  border: 2px solid rgba(212, 175, 90, 0.35);
-  box-shadow: inset 0 6px 16px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
+  padding: 8px 8px 10px;
+  border-radius: 12px 12px 20px 20px;
+  background: linear-gradient(165deg, #4a3428 0%, #1a100a 100%);
+  border: 2px solid rgba(232, 197, 106, 0.4);
+  box-shadow:
+    inset 0 8px 20px rgba(0, 0, 0, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.35);
   position: relative;
 }
 
@@ -501,8 +538,8 @@
 
 .pit {
   position: relative;
-  width: clamp(44px, 11vw, 54px);
-  min-height: clamp(68px, 17vw, 82px);
+  width: clamp(46px, 11.5vw, 56px);
+  min-height: clamp(76px, 19vw, 90px);
   padding: 0;
   margin: 0;
   border: none;
@@ -527,20 +564,27 @@
 
 .pit-cavity {
   width: 100%;
+  min-width: 42px;
+  min-height: 42px;
   aspect-ratio: 1;
-  max-height: 54px;
-  margin: 12px auto 2px;
+  max-height: 58px;
+  margin: 0 auto;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px;
+  padding: 4px;
   box-sizing: border-box;
-  background: radial-gradient(ellipse at 45% 25%, #3a2a22 0%, #1a100c 55%, #0c0806 100%);
+  background: radial-gradient(
+    ellipse at 42% 28%,
+    #5c4838 0%,
+    #3a2a20 45%,
+    #1a120c 85%
+  );
   box-shadow:
-    inset 0 8px 18px rgba(0, 0, 0, 0.75),
-    inset 0 -2px 6px rgba(255, 220, 180, 0.06),
-    0 2px 4px rgba(0, 0, 0, 0.35);
+    inset 0 6px 14px rgba(0, 0, 0, 0.65),
+    inset 0 -3px 8px rgba(255, 230, 190, 0.12),
+    0 1px 0 rgba(255, 220, 180, 0.15);
   transition: box-shadow 0.25s, background 0.25s;
 }
 
@@ -649,72 +693,75 @@
   }
 }
 
-/* Dual-face phone mode */
-.pit--dual-face {
-  display: flex;
-  flex-direction: column;
-}
-
 .pit-face {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
   flex: 1;
-  position: relative;
+  gap: 3px;
+  padding: 2px 0;
 }
 
-.pit-face--far {
-  transform: rotate(180deg);
-}
-
-.pit-face--near {
-  justify-content: flex-end;
-}
-
-.pit-face--near .pit-cavity {
+/* Верхний ряд: № сверху (к игроку 2), счёт снизу (к казанам) */
+.pit--row-far .pit-index {
   order: 1;
-  margin-top: auto;
 }
 
-.pit-face--near .pit-count {
+.pit--row-far .pit-cavity {
   order: 2;
 }
 
-.pit-face--near .pit-index {
+.pit--row-far .pit-count {
   order: 3;
 }
 
-.pit-face--near .pit-badge {
+.pit--row-far .pit-badge {
   order: 0;
-  align-self: flex-end;
+  align-self: center;
+  margin-bottom: 1px;
 }
 
-.pit-face--far .pit-badge {
-  align-self: flex-start;
+/* Нижний ряд: счёт сверху (к казанам), № снизу (к игроку 1) — зеркально */
+.pit--row-near .pit-count {
+  order: 1;
+}
+
+.pit--row-near .pit-cavity {
+  order: 2;
+}
+
+.pit--row-near .pit-index {
+  order: 3;
+}
+
+.pit--row-near .pit-badge {
+  order: 0;
+  align-self: center;
+}
+
+/* Телефон: только подписи верхнего ряда разворачиваем для чтения со стороны игрока 2 */
+.pit--dual-face.pit--row-far .pit-index,
+.pit--dual-face.pit--row-far .pit-count {
+  display: inline-block;
+  transform: rotate(180deg);
 }
 
 .pit-index {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.55rem;
-  font-weight: 700;
-  color: rgba(212, 175, 90, 0.65);
-}
-
-.pit--dual-face .pit-index {
-  position: static;
-  transform: none;
-  margin-top: 2px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #e8c56a;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  line-height: 1;
 }
 
 .pit-count {
-  font-size: 0.62rem;
-  font-weight: 700;
+  font-size: 0.65rem;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: rgba(212, 196, 168, 0.75);
+  color: #f5ebe0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  line-height: 1;
 }
 
 .pit-badge {
@@ -752,52 +799,88 @@
 
 .kumalak {
   display: block;
-  width: 9px;
-  height: 8px;
-  border-radius: 42% 58% 52% 48% / 48% 42% 58% 52%;
+  width: 11px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 44% 56% 48% 52% / 52% 44% 56% 48%;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.55),
-    inset 1px 1px 1px rgba(255, 255, 255, 0.25),
-    inset -1px -1px 1px rgba(0, 0, 0, 0.35);
+    0 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 4px rgba(255, 240, 200, 0.15);
 }
 
+/* Кость/речной камень — светлый */
 .kumalak--0 {
-  background: radial-gradient(circle at 32% 28%, #5a5a62 0%, #1a1a22 55%, #0a0a10 100%);
+  background: radial-gradient(
+    circle at 28% 22%,
+    #fffef8 0%,
+    #f5ecd8 35%,
+    #e0cfa8 70%,
+    #c9b080 100%
+  );
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.5),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.9),
+    0 0 6px rgba(255, 240, 200, 0.35);
 }
 
+/* Обсидиан — тёмный с ярким бликом */
 .kumalak--1 {
-  background: radial-gradient(circle at 30% 26%, #6a6a72 0%, #2a2a32 50%, #121218 100%);
+  background: radial-gradient(
+    circle at 30% 24%,
+    #8a9098 0%,
+    #3a3a44 40%,
+    #1a1a22 75%,
+    #0a0a10 100%
+  );
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    inset 1px 1px 1px rgba(200, 210, 230, 0.45),
+    0 0 5px rgba(140, 160, 200, 0.2);
 }
 
+/* Базальт / янтарный гранит */
 .kumalak--2 {
-  background: radial-gradient(circle at 34% 30%, #4a4a52 0%, #181820 60%, #080810 100%);
+  background: radial-gradient(
+    circle at 32% 26%,
+    #c8a878 0%,
+    #7a5a40 45%,
+    #4a3828 80%,
+    #2a2018 100%
+  );
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.65),
+    inset 1px 1px 1px rgba(255, 220, 160, 0.5);
 }
 
 .stone-pile--lg .kumalak {
+  width: 12px;
+  height: 11px;
+}
+
+.stone-pile--md .kumalak {
   width: 10px;
   height: 9px;
 }
 
-.stone-pile--md .kumalak {
-  width: 8px;
-  height: 7px;
-}
-
 .stone-pile--sm .kumalak {
-  width: 7px;
-  height: 6px;
+  width: 9px;
+  height: 8px;
 }
 
 .stone-pile--xs .kumalak,
 .stone-pile--xxs .kumalak {
-  width: 5px;
-  height: 5px;
-  gap: 1px;
+  width: 7px;
+  height: 7px;
 }
 
 .stone-pile--compact .kumalak {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
+}
+
+.stone-pile {
+  gap: 2px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 }
 
 .pit--sowing .kumalak {
@@ -995,12 +1078,24 @@
 }
 
 @media (max-width: 400px) {
-  .wood-board__body {
-    gap: 4px;
+  .board-kazan-channel {
+    gap: 6px;
+    padding: 6px 4px;
   }
 
   .kazan-chalice {
-    flex: 0 0 48px;
+    min-width: 58px;
+    max-width: 90px;
+  }
+
+  .kumalak {
+    width: 9px;
+    height: 8px;
+  }
+
+  .stone-pile--lg .kumalak {
+    width: 10px;
+    height: 9px;
   }
 
   .player-hud {

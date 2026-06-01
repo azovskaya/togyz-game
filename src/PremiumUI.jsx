@@ -53,15 +53,11 @@ export function BoardOrnament({ edge }) {
 }
 
 function Kumalak({ index }) {
-  const { w, h, rot, x, y, variant } = kumalakStyle(index);
+  const { rot, x, y, variant } = kumalakStyle(index);
   return (
     <span
       className={`kumalak kumalak--${variant}`}
-      style={{
-        width: `${w}%`,
-        height: `${h}%`,
-        transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`,
-      }}
+      style={{ transform: `translate(${x}px, ${y}px) rotate(${rot}deg)` }}
     />
   );
 }
@@ -130,23 +126,19 @@ export function PitCell({
     .filter(Boolean)
     .join(" ");
 
-  const faceClass = phoneDualFace
-    ? isFarRow
-      ? "pit-face--far"
-      : "pit-face--near"
-    : "";
+  const rowClass = isFarRow ? "pit--row-far" : "pit--row-near";
 
   return (
     <button
       type="button"
-      className={`${classes}${phoneDualFace ? " pit--dual-face" : ""}`}
+      className={`${classes} ${rowClass}${phoneDualFace ? " pit--dual-face" : ""}`}
       onClick={clickable ? onClick : undefined}
       disabled={!clickable}
       title={t(lang, "holeTitle", { n: dispNum, name, stones })}
       aria-label={t(lang, "holeTitle", { n: dispNum, name, stones })}
     >
       <div className="pit-rim" aria-hidden />
-      <div className={`pit-face ${faceClass}`.trim()}>
+      <div className="pit-face">
         {isTuzdyk && (
           <span
             className={`pit-badge ${tuzdykOwner === 0 ? "pit-badge--p0" : "pit-badge--p1"}`}
@@ -164,16 +156,10 @@ export function PitCell({
   );
 }
 
-export function CentralKazan({
-  count,
-  label,
-  isActive,
-  flipped,
-  side,
-}) {
+export function CentralKazan({ count, label, isActive, flipped, slot }) {
   return (
     <div
-      className={`kazan-chalice kazan-chalice--${side} ${isActive ? "kazan-chalice--active" : ""} ${flipped ? "kazan-chalice--flipped" : ""}`}
+      className={`kazan-chalice kazan-chalice--${slot} ${isActive ? "kazan-chalice--active" : ""} ${flipped ? "kazan-chalice--flipped" : ""}`}
     >
       <div className="kazan-chalice__rim" aria-hidden />
       <div className="kazan-chalice__head">

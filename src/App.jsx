@@ -544,34 +544,40 @@ export default function TogyzkumalaqGame() {
       >
         <BoardOrnament edge="top" />
         <div className="wood-board__body">
-          <CentralKazan
-            side="left"
-            count={kazans[1]}
-            label={isPhoneMode ? t(lang, "kazan2") : t(lang, "kazanAi")}
-            isActive={currentPlayer === 1}
-            flipped={isPhoneMode}
-          />
-          <div className="wood-board__center">
-            <section
-              className="pit-row pit-row--far"
-              aria-label={t(lang, "player2")}
-            >
-              {topRowIndices.map((h) => renderHole(h, true))}
-            </section>
-            <section
-              className="pit-row pit-row--near"
-              aria-label={t(lang, "player1")}
-            >
-              {bottomRowIndices.map((h) => renderHole(h, false))}
-            </section>
-          </div>
-          <CentralKazan
-            side="right"
-            count={kazans[0]}
-            label={t(lang, "kazan1")}
-            isActive={currentPlayer === 0}
-            flipped={false}
-          />
+          <section
+            className="pit-row pit-row--far"
+            aria-label={t(lang, "player2")}
+          >
+            {topRowIndices.map((h) => renderHole(h, true))}
+          </section>
+
+          <section
+            className="board-kazan-channel"
+            aria-label={t(lang, "dividerTitle")}
+          >
+            <CentralKazan
+              slot="opp"
+              count={kazans[1]}
+              label={isPhoneMode ? t(lang, "kazan2") : t(lang, "kazanAi")}
+              isActive={currentPlayer === 1}
+              flipped={isPhoneMode}
+            />
+            <div className="board-kazan-channel__furrow" aria-hidden />
+            <CentralKazan
+              slot="you"
+              count={kazans[0]}
+              label={t(lang, "kazan1")}
+              isActive={currentPlayer === 0}
+              flipped={false}
+            />
+          </section>
+
+          <section
+            className="pit-row pit-row--near"
+            aria-label={t(lang, "player1")}
+          >
+            {bottomRowIndices.map((h) => renderHole(h, false))}
+          </section>
         </div>
         <BoardOrnament edge="bottom" />
       </div>
