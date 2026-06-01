@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   t,
   loadLang,
@@ -7,25 +7,32 @@ import {
   getHoleNames,
   getRules,
 } from "./i18n";
+import { getSowingPath } from "./boardVisual";
+import {
+  TOTAL,
+  INIT,
+  owner,
+  nextHole,
+  initBoard,
+  topRowIndices,
+  bottomRowIndices,
+} from "./gameConstants";
+import {
+  YurtScene,
+  BoardOrnament,
+  PitCell,
+  CentralKazan,
+  PlayerPlate,
+  VictoryOverlay,
+} from "./PremiumUI";
 import "./App.css";
 
-const TOTAL = 18;
-const INIT = 9;
-
 const THEME = {
-  p1: "#c17f24",
-  p1Bright: "#e09a2e",
-  p2: "#2b7fd4",
-  ai: "#d4566a",
+  p1: "#d4af5a",
+  p1Bright: "#f0d78c",
+  p2: "#7eb8e8",
+  ai: "#e87888",
 };
-
-const owner = (h) => (h < 9 ? 0 : 1);
-const nextHole = (h) => (h + 1) % TOTAL;
-const initBoard = () => Array(TOTAL).fill(INIT);
-const getDisplayNumber = (h) => (h < 9 ? h + 1 : h - 8);
-
-const topRowIndices = [17, 16, 15, 14, 13, 12, 11, 10, 9];
-const bottomRowIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
 function canDeclareTuzdyk(tuzdyk, player, lastBoardHole) {
   if (lastBoardHole === (1 - player) * 9 + 8) return false;
@@ -161,124 +168,6 @@ function aiPick(board, kazans, tuzdyk, player, level) {
   return bestMove;
 }
 
-/** Сетка для ровно N шариков: чем больше N, тем мельче и плотнее раскладка */
-function getStoneGrid(count) {
-  if (count <= 0) return { cols: 1, size: "lg" };
-  if (count <= 3) return { cols: count, size: "lg" };
-  if (count <= 6) return { cols: 3, size: "lg" };
-  if (count <= 9) return { cols: 3, size: "md" };
-  if (count <= 12) return { cols: 4, size: "md" };
-  if (count <= 16) return { cols: 4, size: "sm" };
-  if (count <= 20) return { cols: 5, size: "sm" };
-  if (count <= 25) return { cols: 5, size: "xs" };
-  if (count <= 30) return { cols: 6, size: "xs" };
-  const cols = Math.min(7, Math.ceil(Math.sqrt(count)));
-  return { cols, size: "xxs" };
-}
-
-function StonePile({ count }) {
-  if (count <= 0) return <div className="stone-pile stone-pile--empty" aria-hidden />;
-
-  const { cols, size } = getStoneGrid(count);
-  return (
-    <div
-      className={`stone-pile stone-pile--${size}`}
-      style={{ gridTemplateColumns: `repeat(${cols}, min-content)` }}
-      aria-hidden
-    >
-      {Array.from({ length: count }, (_, i) => (
-        <span
-          key={i}
-          className={`stone-bead ${i % 2 === 0 ? "stone-bead--cream" : "stone-bead--walnut"}`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function PitCell({
-  idx,
-  stones,
-  clickable,
-  flash,
-  lastMoved,
-  tuzdykOwner,
-  onClick,
-  phoneDualFace,
-  isFarRow,
-  holeNames,
-  lang,
-}) {
-  const isTuzdyk = tuzdykOwner !== -1;
-  const dispNum = getDisplayNumber(idx);
-  const name = holeNames[dispNum - 1];
-  const classes = [
-    "pit",
-    clickable && "pit--clickable",
-    flash && "pit--flash",
-    lastMoved && !flash && "pit--last",
-    isTuzdyk && "pit--tuzdyk",
-    isTuzdyk && tuzdykOwner === 0 && "pit--tuzdyk-p0",
-    isTuzdyk && tuzdykOwner === 1 && "pit--tuzdyk-p1",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const faceClass = phoneDualFace
-    ? isFarRow
-      ? "pit-face--far"
-      : "pit-face--near"
-    : "";
-
-  return (
-    <button
-      type="button"
-      className={`${classes}${phoneDualFace ? " pit--dual-face" : ""}`}
-      onClick={clickable ? onClick : undefined}
-      disabled={!clickable}
-      title={t(lang, "holeTitle", { n: dispNum, name, stones })}
-      aria-label={t(lang, "holeTitle", { n: dispNum, name, stones })}
-    >
-      <div className={`pit-face ${faceClass}`.trim()}>
-        {isTuzdyk && (
-          <span
-            className={`pit-badge ${tuzdykOwner === 0 ? "pit-badge--p0" : "pit-badge--p1"}`}
-          >
-            {t(lang, "tuzdyk")}
-          </span>
-        )}
-        <span className="pit-index">{dispNum}</span>
-        <div className="pit-bowl">
-          <StonePile count={stones} />
-        </div>
-        <span className="pit-count" aria-hidden="true">
-          {stones}
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function CentralKazan({ count, label, isActive, color, flipped }) {
-  return (
-    <div
-      className={`kazan-well ${isActive ? "kazan-well--active" : ""} ${flipped ? "kazan-well--flipped" : ""}`}
-      style={{ "--kazan-accent": color }}
-    >
-      <div className="kazan-well__head">
-        <span className="kazan-well__label">{label}</span>
-        <span className="kazan-well__count">{count}</span>
-      </div>
-      <div className="kazan-well__pile">
-        <StonePile count={count <= 49 ? count : 49} />
-        {count > 49 && (
-          <span className="kazan-well__more">+{count - 49}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function TogyzkumalaqGame() {
   const [lang, setLang] = useState(loadLang);
   const [board, setBoard] = useState(initBoard);
@@ -286,11 +175,15 @@ export default function TogyzkumalaqGame() {
   const [tuzdyk, setTuzdyk] = useState([-1, -1]);
   const [currentPlayer, setCurrent] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [, setWinner] = useState(null);
+  const [winner, setWinner] = useState(null);
   const [finalKazans, setFinalKazans] = useState(null);
   const [animating, setAnimating] = useState(false);
   const [flashHoles, setFlashHoles] = useState([]);
   const [lastMoved, setLastMoved] = useState(-1);
+  const [sowingHole, setSowingHole] = useState(-1);
+  const [tuzdykPulse, setTuzdykPulse] = useState(false);
+  const [boardLit, setBoardLit] = useState(false);
+  const animToken = useRef(0);
 
   const [gameMode, setGameMode] = useState("ai");
   const [difficulty, setDifficulty] = useState(2);
@@ -316,6 +209,70 @@ export default function TogyzkumalaqGame() {
     saveLang(code);
   };
 
+  const finishMove = useCallback(
+    (result, holeIdx) => {
+      setBoard(result.board);
+      setKazans(result.kazans);
+      setTuzdyk(result.tuzdyk);
+      setFlashHoles([]);
+      setSowingHole(-1);
+      setBoardLit(false);
+
+      const fk = collectRemaining(result.board, result.kazans);
+
+      if (result.kazans[0] > 81 || result.kazans[1] > 81) {
+        const endKazans =
+          result.kazans[0] > 81
+            ? collectRemaining(result.board, result.kazans)
+            : fk;
+        setFinalKazans(endKazans);
+        setKazans(endKazans);
+        const w = result.kazans[0] > 81 ? 0 : 1;
+        setWinner(w);
+        setGameOver(true);
+        setScores((prev) => {
+          const s = [...prev];
+          s[w]++;
+          return s;
+        });
+        setStatusMsg(
+          w === 0 ? t(lang, "winP1") : t(lang, "winP2", { name: p1Label }),
+        );
+        setAnimating(false);
+        return;
+      }
+
+      const next = 1 - currentPlayer;
+      if (!validMoves(result.board, result.tuzdyk, next).length) {
+        const endK = collectRemaining(result.board, result.kazans);
+        setFinalKazans(endK);
+        setKazans(endK);
+        const w = endK[0] > endK[1] ? 0 : endK[1] > endK[0] ? 1 : "draw";
+        setWinner(w);
+        setGameOver(true);
+        setScores((prev) => {
+          const s = [...prev];
+          if (w !== "draw") s[w]++;
+          return s;
+        });
+        setStatusMsg(
+          w === "draw"
+            ? t(lang, "draw")
+            : w === 0
+              ? t(lang, "winP1")
+              : t(lang, "winP2", { name: p1Label }),
+        );
+        setAnimating(false);
+        return;
+      }
+
+      setCurrent(next);
+      if (gameMode === "ai" && next === 1) setAiThinking(true);
+      setAnimating(false);
+    },
+    [currentPlayer, gameMode, lang, p1Label],
+  );
+
   const processMove = useCallback(
     (holeIdx) => {
       if (animating || gameOver) return;
@@ -325,8 +282,13 @@ export default function TogyzkumalaqGame() {
       const result = applyMove(board, kazans, tuzdyk, currentPlayer, holeIdx);
       if (!result) return;
 
+      const path = getSowingPath(board, tuzdyk, currentPlayer, holeIdx);
+      const token = ++animToken.current;
+
       setAnimating(true);
       setLastMoved(holeIdx);
+      setSowingHole(-1);
+      setBoardLit(true);
 
       if (result.captured.length > 0) {
         setFlashHoles(result.captured);
@@ -337,69 +299,35 @@ export default function TogyzkumalaqGame() {
         );
       } else if (result.newTuzdyk) {
         setStatusMsg(t(lang, "tuzdykDeclared"));
+        setTuzdykPulse(true);
+        setTimeout(() => setTuzdykPulse(false), 900);
       } else {
         setStatusMsg("");
       }
 
-      setTimeout(() => {
-        setBoard(result.board);
-        setKazans(result.kazans);
-        setTuzdyk(result.tuzdyk);
-        setFlashHoles([]);
+      const stepMs = Math.min(110, Math.max(42, 520 / Math.max(path.length, 1)));
 
-        const fk = collectRemaining(result.board, result.kazans);
-
-        if (result.kazans[0] > 81 || result.kazans[1] > 81) {
-          const endKazans =
-            result.kazans[0] > 81
-              ? collectRemaining(result.board, result.kazans)
-              : fk;
-          setFinalKazans(endKazans);
-          setKazans(endKazans);
-          const w = result.kazans[0] > 81 ? 0 : 1;
-          setWinner(w);
-          setGameOver(true);
-          setScores((prev) => {
-            const s = [...prev];
-            s[w]++;
-            return s;
-          });
-          setStatusMsg(
-            w === 0 ? t(lang, "winP1") : t(lang, "winP2", { name: p1Label }),
-          );
-          setAnimating(false);
+      const runStep = (i) => {
+        if (animToken.current !== token) return;
+        if (i >= path.length) {
+          setTimeout(() => {
+            if (animToken.current !== token) return;
+            finishMove(result, holeIdx);
+          }, 140);
           return;
         }
+        setSowingHole(path[i]);
+        setTimeout(() => runStep(i + 1), stepMs);
+      };
 
-        const next = 1 - currentPlayer;
-        if (!validMoves(result.board, result.tuzdyk, next).length) {
-          const endK = collectRemaining(result.board, result.kazans);
-          setFinalKazans(endK);
-          setKazans(endK);
-          const w =
-            endK[0] > endK[1] ? 0 : endK[1] > endK[0] ? 1 : "draw";
-          setWinner(w);
-          setGameOver(true);
-          setScores((prev) => {
-            const s = [...prev];
-            if (w !== "draw") s[w]++;
-            return s;
-          });
-          setStatusMsg(
-            w === "draw"
-              ? t(lang, "draw")
-              : w === 0
-                ? t(lang, "winP1")
-                : t(lang, "winP2", { name: p1Label }),
-          );
-          setAnimating(false);
-          return;
-        }
-
-        setCurrent(next);
-        if (gameMode === "ai" && next === 1) setAiThinking(true);
-        setAnimating(false);
-      }, 450);
+      if (path.length === 0) {
+        setTimeout(() => {
+          if (animToken.current !== token) return;
+          finishMove(result, holeIdx);
+        }, 180);
+      } else {
+        runStep(0);
+      }
     },
     [
       board,
@@ -408,8 +336,7 @@ export default function TogyzkumalaqGame() {
       currentPlayer,
       animating,
       gameOver,
-      p1Label,
-      gameMode,
+      finishMove,
       lang,
     ],
   );
@@ -449,6 +376,10 @@ export default function TogyzkumalaqGame() {
     setAnimating(false);
     setFlashHoles([]);
     setLastMoved(-1);
+    setSowingHole(-1);
+    setTuzdykPulse(false);
+    setBoardLit(false);
+    animToken.current++;
     setStatusMsg("");
     setAiThinking(false);
   };
@@ -471,7 +402,9 @@ export default function TogyzkumalaqGame() {
       }
       flash={flashHoles.includes(h)}
       lastMoved={lastMoved === h}
+      sowing={sowingHole === h}
       tuzdykOwner={tuzdyk[0] === h ? 0 : tuzdyk[1] === h ? 1 : -1}
+      tuzdykPulse={tuzdykPulse}
       onClick={() => processMove(h)}
       phoneDualFace={isPhoneMode}
       isFarRow={isOpp}
@@ -496,20 +429,40 @@ export default function TogyzkumalaqGame() {
 
   return (
     <div className="game-root">
-      <div className="game-bg" aria-hidden />
+      <YurtScene />
 
       {showRules && (
         <RulesModal lang={lang} onClose={() => setShowRules(false)} />
       )}
 
       <header className="game-header">
-        <h1 className="game-title">
-          <span className="game-title-accent">{t(lang, "title")}</span>
-        </h1>
+        <h1 className="game-title">{t(lang, "title")}</h1>
         <p className="game-subtitle">{t(lang, "subtitle")}</p>
       </header>
 
-      <div className="toolbar">
+      <div className="player-hud">
+        <PlayerPlate
+          name={t(lang, "player1")}
+          kazanCount={kazans[0]}
+          active={currentPlayer === 0 && !gameOver}
+          variant="p1"
+        />
+        <div className="player-hud__turn">
+          {!gameOver && (
+            <span className="player-hud__turn-text">
+              {aiThinking ? t(lang, "aiThinking") : t(lang, "turn")}
+            </span>
+          )}
+        </div>
+        <PlayerPlate
+          name={p1Label}
+          kazanCount={kazans[1]}
+          active={currentPlayer === 1 && !gameOver}
+          variant="p2"
+        />
+      </div>
+
+      <div className="toolbar toolbar--minimal">
         <div className="lang-switch" role="group" aria-label="Language">
           {Object.entries(LANGUAGES).map(([code, label]) => (
             <button
@@ -586,39 +539,41 @@ export default function TogyzkumalaqGame() {
         )}
       </div>
 
-      <div className="board-arena">
-        <div className="board-arena__rim" aria-hidden />
-        <section className="board-lane board-lane--far" aria-label={t(lang, "player2")}>
-          <div className="pit-track">
-            {topRowIndices.map((h) => renderHole(h, true))}
+      <div
+        className={`wood-board ${boardLit ? "wood-board--lit" : ""} ${tuzdykPulse ? "wood-board--tuzdyk-wave" : ""}`}
+      >
+        <BoardOrnament edge="top" />
+        <div className="wood-board__body">
+          <CentralKazan
+            side="left"
+            count={kazans[1]}
+            label={isPhoneMode ? t(lang, "kazan2") : t(lang, "kazanAi")}
+            isActive={currentPlayer === 1}
+            flipped={isPhoneMode}
+          />
+          <div className="wood-board__center">
+            <section
+              className="pit-row pit-row--far"
+              aria-label={t(lang, "player2")}
+            >
+              {topRowIndices.map((h) => renderHole(h, true))}
+            </section>
+            <section
+              className="pit-row pit-row--near"
+              aria-label={t(lang, "player1")}
+            >
+              {bottomRowIndices.map((h) => renderHole(h, false))}
+            </section>
           </div>
-        </section>
-
-        <section className="board-channel" aria-label={t(lang, "dividerTitle")}>
-          <div className="board-channel__line" aria-hidden />
-          <div className="board-channel__wells">
-            <CentralKazan
-              count={kazans[1]}
-              label={isPhoneMode ? t(lang, "kazan2") : t(lang, "kazanAi")}
-              isActive={currentPlayer === 1}
-              color={p1Color}
-              flipped={isPhoneMode}
-            />
-            <CentralKazan
-              count={kazans[0]}
-              label={t(lang, "kazan1")}
-              isActive={currentPlayer === 0}
-              color={p0Color}
-              flipped={false}
-            />
-          </div>
-        </section>
-
-        <section className="board-lane board-lane--near" aria-label={t(lang, "player1")}>
-          <div className="pit-track">
-            {bottomRowIndices.map((h) => renderHole(h, false))}
-          </div>
-        </section>
+          <CentralKazan
+            side="right"
+            count={kazans[0]}
+            label={t(lang, "kazan1")}
+            isActive={currentPlayer === 0}
+            flipped={false}
+          />
+        </div>
+        <BoardOrnament edge="bottom" />
       </div>
 
       <div className="score-row">
@@ -632,30 +587,14 @@ export default function TogyzkumalaqGame() {
       </div>
 
       {gameOver && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal-card">
-            <div className="modal-icon">☽</div>
-            <h2 className="modal-title">{statusMsg}</h2>
-            {finalKazans && (
-              <p className="modal-text">
-                {t(lang, "finalScore", {
-                  p1: t(lang, "player1"),
-                  s1: finalKazans[0],
-                  p2: p1Label,
-                  s2: finalKazans[1],
-                })}
-              </p>
-            )}
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ marginTop: 16, width: "100%" }}
-              onClick={reset}
-            >
-              {t(lang, "playAgain")}
-            </button>
-          </div>
-        </div>
+        <VictoryOverlay
+          lang={lang}
+          statusMsg={statusMsg}
+          finalKazans={finalKazans}
+          p1Label={p1Label}
+          winner={winner}
+          onPlayAgain={reset}
+        />
       )}
     </div>
   );
