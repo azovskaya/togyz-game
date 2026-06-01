@@ -387,6 +387,52 @@
   border-radius: 50%;
 }
 
+/* Двусторонняя ориентация (режим «телефон как доска») */
+.pit--dual-face {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.pit-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+  position: relative;
+}
+
+/* Верхний ряд — к игроку 2 (смотрит с противоположной стороны) */
+.pit-face--far {
+  transform: rotate(180deg);
+}
+
+/* Нижний ряд — номер и счётчик у края, ближе к игроку 1 */
+.pit-face--near {
+  justify-content: flex-end;
+}
+
+.pit-face--near .pit-bowl {
+  order: 1;
+  margin-top: auto;
+  margin-bottom: 2px;
+}
+
+.pit-face--near .pit-count {
+  order: 2;
+}
+
+.pit-face--near .pit-index {
+  order: 3;
+}
+
+.pit-face--near .pit-badge {
+  order: 0;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
 .pit-index {
   position: absolute;
   top: 2px;
@@ -397,6 +443,13 @@
   color: var(--text-muted);
   z-index: 2;
   line-height: 1;
+}
+
+.pit--dual-face .pit-index {
+  position: static;
+  transform: none;
+  font-size: 0.62rem;
+  margin-top: 2px;
 }
 
 .pit-badge {
@@ -412,6 +465,15 @@
   letter-spacing: 0.04em;
   z-index: 3;
   line-height: 1;
+}
+
+.pit--dual-face .pit-badge {
+  position: static;
+}
+
+.pit-face--far .pit-badge {
+  align-self: flex-start;
+  margin-bottom: 2px;
 }
 
 .pit-badge--p0 {
@@ -441,8 +503,8 @@
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
-.pit-bowl--flipped {
-  transform: rotate(180deg);
+.pit--dual-face .pit-bowl {
+  margin: 4px auto;
 }
 
 .pit--clickable .pit-bowl {
@@ -500,6 +562,11 @@
   text-align: center;
   line-height: 1;
   opacity: 0.85;
+  margin-bottom: 2px;
+}
+
+.pit--dual-face .pit-count {
+  margin-bottom: 0;
 }
 
 .pit--flash .pit-count,

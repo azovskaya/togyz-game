@@ -204,7 +204,8 @@ function PitCell({
   lastMoved,
   tuzdykOwner,
   onClick,
-  flipContent,
+  phoneDualFace,
+  isFarRow,
   holeNames,
   lang,
 }) {
@@ -223,29 +224,37 @@ function PitCell({
     .filter(Boolean)
     .join(" ");
 
+  const faceClass = phoneDualFace
+    ? isFarRow
+      ? "pit-face--far"
+      : "pit-face--near"
+    : "";
+
   return (
     <button
       type="button"
-      className={classes}
+      className={`${classes}${phoneDualFace ? " pit--dual-face" : ""}`}
       onClick={clickable ? onClick : undefined}
       disabled={!clickable}
       title={t(lang, "holeTitle", { n: dispNum, name, stones })}
       aria-label={t(lang, "holeTitle", { n: dispNum, name, stones })}
     >
-      <span className="pit-index">{dispNum}</span>
-      {isTuzdyk && (
-        <span
-          className={`pit-badge ${tuzdykOwner === 0 ? "pit-badge--p0" : "pit-badge--p1"}`}
-        >
-          {t(lang, "tuzdyk")}
+      <div className={`pit-face ${faceClass}`.trim()}>
+        {isTuzdyk && (
+          <span
+            className={`pit-badge ${tuzdykOwner === 0 ? "pit-badge--p0" : "pit-badge--p1"}`}
+          >
+            {t(lang, "tuzdyk")}
+          </span>
+        )}
+        <span className="pit-index">{dispNum}</span>
+        <div className="pit-bowl">
+          <StonePile count={stones} />
+        </div>
+        <span className="pit-count" aria-hidden="true">
+          {stones}
         </span>
-      )}
-      <div className={`pit-bowl ${flipContent ? "pit-bowl--flipped" : ""}`}>
-        <StonePile count={stones} />
       </div>
-      <span className="pit-count" aria-hidden="true">
-        {stones}
-      </span>
     </button>
   );
 }
@@ -464,7 +473,8 @@ export default function TogyzkumalaqGame() {
       lastMoved={lastMoved === h}
       tuzdykOwner={tuzdyk[0] === h ? 0 : tuzdyk[1] === h ? 1 : -1}
       onClick={() => processMove(h)}
-      flipContent={isOpp && isPhoneMode}
+      phoneDualFace={isPhoneMode}
+      isFarRow={isOpp}
       holeNames={holeNames}
       lang={lang}
     />
@@ -592,7 +602,7 @@ export default function TogyzkumalaqGame() {
               label={isPhoneMode ? t(lang, "kazan2") : t(lang, "kazanAi")}
               isActive={currentPlayer === 1}
               color={p1Color}
-              flipped={p2TurnUi}
+              flipped={isPhoneMode}
             />
             <CentralKazan
               count={kazans[0]}
