@@ -5,22 +5,49 @@
 }
 
 :root {
-  --steppe-night: #0c0804;
-  --steppe-dusk: #1a1208;
-  --felt-brown: #2a1a0c;
-  --wood-dark: #1a0c04;
-  --wood-mid: #3d2610;
-  --wood-light: #5c3a1e;
-  --khan-gold: #c9a227;
-  --khan-gold-bright: #e8c96a;
-  --khan-crimson: #8b2635;
-  --khan-crimson-light: #c44d5a;
-  --kumalak-bone: #e8e0d4;
-  --kumalak-stone: #5a5248;
-  --text-warm: #d4b896;
-  --text-muted: #8c6b4a;
+  /* Page */
+  --bg-base: #f4f0e8;
+  --bg-warm: #faf7f2;
+  --bg-accent: #e8f4fc;
 
-  font-family: "Philosopher", "Segoe UI", Georgia, serif;
+  /* Text */
+  --text-primary: #2c2419;
+  --text-secondary: #5c5348;
+  --text-muted: #8a8176;
+
+  /* Accents */
+  --accent-gold: #c17f24;
+  --accent-gold-bright: #e09a2e;
+  --accent-gold-soft: #fff4e0;
+  --accent-p1: #c17f24;
+  --accent-p2: #2b7fd4;
+  --accent-ai: #d4566a;
+  --accent-capture: #e09a2e;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-board: linear-gradient(165deg, #c9a06a 0%, #a67c52 42%, #8b6344 100%);
+  --surface-board-inner: #f0e6d6;
+  --surface-hole: linear-gradient(180deg, #8b6b4f 0%, #6d5340 55%, #5a4535 100%);
+  --surface-hole-active: linear-gradient(180deg, #a67c52 0%, #8b6344 100%);
+  --surface-kazan: linear-gradient(180deg, #faf7f2 0%, #ebe3d6 100%);
+
+  /* Borders & shadows */
+  --border-subtle: rgba(44, 36, 25, 0.08);
+  --border-medium: rgba(44, 36, 25, 0.14);
+  --border-strong: rgba(44, 36, 25, 0.22);
+  --shadow-sm: 0 1px 3px rgba(44, 36, 25, 0.06), 0 1px 2px rgba(44, 36, 25, 0.04);
+  --shadow-md: 0 4px 16px rgba(44, 36, 25, 0.08), 0 2px 6px rgba(44, 36, 25, 0.04);
+  --shadow-lg: 0 12px 40px rgba(44, 36, 25, 0.12), 0 4px 12px rgba(44, 36, 25, 0.06);
+  --shadow-board: 0 16px 48px rgba(139, 99, 68, 0.25), 0 4px 12px rgba(44, 36, 25, 0.08);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  font-family: "Outfit", "Segoe UI", system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -32,8 +59,8 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background: var(--steppe-night);
-  color: var(--text-warm);
+  background: var(--bg-base);
+  color: var(--text-primary);
   overflow-x: hidden;
 }
 
@@ -42,7 +69,6 @@ body {
   min-height: 100svh;
   margin: 0;
   text-align: center;
-  border: none;
 }
 
 button {
@@ -50,6 +76,6 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid var(--khan-gold);
+  outline: 2px solid var(--accent-gold);
   outline-offset: 2px;
 }

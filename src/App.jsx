@@ -1,37 +1,39 @@
 import { useState, useEffect, useCallback } from "react";
+import {
+  t,
+  loadLang,
+  saveLang,
+  LANGUAGES,
+  getHoleNames,
+  getRules,
+} from "./i18n";
+import "./App.css";
 
-// ─── КОНСТАНТЫ И ЛОГИКА ─────────────────────────────────────────────────────
 const TOTAL = 18;
 const INIT = 9;
 
-const HOLE_NAMES = [
-  "Арт", "Тектурмас", "Атотпес", "Атсыратар", "Бель", "Бельбасар",
-  "Кандыкакпан", "Кокмоин", "Мандай",
-];
-
 const THEME = {
-  gold: "#c9a227",
-  goldBright: "#e8c96a",
-  crimson: "#8b2635",
-  crimsonLight: "#c44d5a",
-  woodDark: "#1a0c04",
-  woodMid: "#3d2610",
-  woodLight: "#5c3a1e",
-  felt: "#140a04",
-  text: "#d4b896",
-  textMuted: "#8c6b4a",
+  p1: "#c17f24",
+  p1Bright: "#e09a2e",
+  p2: "#2b7fd4",
+  ai: "#d4566a",
 };
 
 const owner = (h) => (h < 9 ? 0 : 1);
 const nextHole = (h) => (h + 1) % TOTAL;
 const initBoard = () => Array(TOTAL).fill(INIT);
-
 const getDisplayNumber = (h) => (h < 9 ? h + 1 : h - 8);
 
 const topRowIndices = [17, 16, 15, 14, 13, 12, 11, 10, 9];
 const bottomRowIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
-// ─── МАТЕМАТИКА ИГРЫ ─────────────────────────────────────────────────────────
+function canDeclareTuzdyk(tuzdyk, player, lastBoardHole) {
+  if (lastBoardHole === (1 - player) * 9 + 8) return false;
+  const pos = lastBoardHole % 9;
+  if (tuzdyk[1 - player] !== -1 && tuzdyk[1 - player] % 9 === pos) return false;
+  return true;
+}
+
 function applyMove(board, kazans, tuzdyk, player, holeIdx) {
   const b = [...board];
   const k = [...kazans];
@@ -75,7 +77,7 @@ function applyMove(board, kazans, tuzdyk, player, holeIdx) {
     } else if (
       count === 3 &&
       t[player] === -1 &&
-      lastBoardHole !== (1 - player) * 9 + 8
+      canDeclareTuzdyk(t, player, lastBoardHole)
     ) {
       t[player] = lastBoardHole;
       newTuzdyk = true;
@@ -101,7 +103,6 @@ function collectRemaining(board, kazans) {
   return k;
 }
 
-// ─── ИИ ──────────────────────────────────────────────────────────────────────
 function aiPick(board, kazans, tuzdyk, player, level) {
   const moves = validMoves(board, tuzdyk, player);
   if (!moves.length) return null;
@@ -160,84 +161,42 @@ function aiPick(board, kazans, tuzdyk, player, level) {
   return bestMove;
 }
 
-// ─── ОРНАМЕНТ (қошқар мүйіз — бараньи рога) ─────────────────────────────────
-function OrnamentBorder({ position = "top" }) {
-  const flip = position === "bottom";
-  return (
-    <svg
-      viewBox="0 0 200 24"
-      preserveAspectRatio="none"
-      style={{
-        width: "100%",
-        height: 22,
-        display: "block",
-        transform: flip ? "scaleY(-1)" : undefined,
-        opacity: 0.85,
-      }}
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id="ornGold" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#5c3a1e" />
-          <stop offset="50%" stopColor="#c9a227" />
-          <stop offset="100%" stopColor="#5c3a1e" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M0 12 Q25 0 50 12 Q75 24 100 12 Q125 0 150 12 Q175 24 200 12"
-        fill="none"
-        stroke="url(#ornGold)"
-        strokeWidth="1.5"
-      />
-      {[20, 60, 100, 140, 180].map((x) => (
-        <path
-          key={x}
-          d={`M${x} 12 Q${x - 6} 4 ${x} 8 Q${x + 6} 4 ${x} 12 Q${x - 6} 20 ${x} 16 Q${x + 6} 20 ${x} 12`}
-          fill="none"
-          stroke="#c9a227"
-          strokeWidth="0.8"
-          opacity="0.7"
-        />
-      ))}
-    </svg>
-  );
+/** Сетка для ровно N шариков: чем больше N, тем мельче и плотнее раскладка */
+function getStoneGrid(count) {
+  if (count <= 0) return { cols: 1, size: "lg" };
+  if (count <= 3) return { cols: count, size: "lg" };
+  if (count <= 6) return { cols: 3, size: "lg" };
+  if (count <= 9) return { cols: 3, size: "md" };
+  if (count <= 12) return { cols: 4, size: "md" };
+  if (count <= 16) return { cols: 4, size: "sm" };
+  if (count <= 20) return { cols: 5, size: "sm" };
+  if (count <= 25) return { cols: 5, size: "xs" };
+  if (count <= 30) return { cols: 6, size: "xs" };
+  const cols = Math.min(7, Math.ceil(Math.sqrt(count)));
+  return { cols, size: "xxs" };
 }
 
-function SteppeBackground() {
+function StonePile({ count }) {
+  if (count <= 0) return <div className="stone-pile stone-pile--empty" aria-hidden />;
+
+  const { cols, size } = getStoneGrid(count);
   return (
     <div
+      className={`stone-pile stone-pile--${size}`}
+      style={{ gridTemplateColumns: `repeat(${cols}, min-content)` }}
       aria-hidden
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,
-        background: `
-          radial-gradient(ellipse 120% 60% at 50% -10%, rgba(60, 45, 30, 0.5) 0%, transparent 55%),
-          radial-gradient(ellipse 80% 40% at 80% 100%, rgba(139, 38, 53, 0.12) 0%, transparent 50%),
-          linear-gradient(180deg, #0f0a06 0%, #1a1208 40%, #0c0804 100%)
-        `,
-      }}
     >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          opacity: 0.04,
-          backgroundImage: `repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 12px,
-            #c9a227 12px,
-            #c9a227 13px
-          )`,
-        }}
-      />
+      {Array.from({ length: count }, (_, i) => (
+        <span
+          key={i}
+          className={`stone-bead ${i % 2 === 0 ? "stone-bead--cream" : "stone-bead--walnut"}`}
+        />
+      ))}
     </div>
   );
 }
 
-// ─── ЛУНКА (ОТАУ) ───────────────────────────────────────────────────────────
-function AuthenticHole({
+function PitCell({
   idx,
   stones,
   clickable,
@@ -245,192 +204,74 @@ function AuthenticHole({
   lastMoved,
   tuzdykOwner,
   onClick,
-  rotate,
+  flipContent,
+  holeNames,
+  lang,
 }) {
   const isTuzdyk = tuzdykOwner !== -1;
   const dispNum = getDisplayNumber(idx);
-  const name = HOLE_NAMES[dispNum - 1];
-  const tuzdykColor = tuzdykOwner === 0 ? THEME.gold : THEME.crimsonLight;
+  const name = holeNames[dispNum - 1];
+  const classes = [
+    "pit",
+    clickable && "pit--clickable",
+    flash && "pit--flash",
+    lastMoved && !flash && "pit--last",
+    isTuzdyk && "pit--tuzdyk",
+    isTuzdyk && tuzdykOwner === 0 && "pit--tuzdyk-p0",
+    isTuzdyk && tuzdykOwner === 1 && "pit--tuzdyk-p1",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div
+    <button
+      type="button"
+      className={classes}
       onClick={clickable ? onClick : undefined}
-      title={`Отау №${dispNum} «${name}»: ${stones} құмалақ`}
-      style={{
-        width: 58,
-        height: 94,
-        borderRadius: "29px 29px 22px 22px",
-        background: flash
-          ? "radial-gradient(ellipse at 50% 35%, #a16207, #451a03 85%)"
-          : isTuzdyk
-            ? `radial-gradient(ellipse at 50% 25%, #1a1410, #080504 92%)`
-            : lastMoved
-              ? "radial-gradient(ellipse at 50% 30%, #4a2f18, #1a0c04 90%)"
-              : "radial-gradient(ellipse at 50% 28%, #5c3d22, #261408 88%)",
-        border: isTuzdyk
-          ? `3px double ${tuzdykColor}`
-          : "2px solid #120804",
-        boxShadow: flash
-          ? `0 0 18px rgba(201, 162, 39, 0.55), inset 0 8px 14px rgba(0,0,0,0.85)`
-          : "inset 0 10px 18px rgba(0,0,0,0.92), 0 2px 0 rgba(255,220,160,0.06)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "8px 4px 6px",
-        boxSizing: "border-box",
-        cursor: clickable ? "pointer" : "default",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease",
-        transform: `${clickable ? "scale(1.05)" : "scale(1)"} ${rotate ? "rotate(180deg)" : ""}`,
-        position: "relative",
-        userSelect: "none",
-      }}
+      disabled={!clickable}
+      title={t(lang, "holeTitle", { n: dispNum, name, stones })}
+      aria-label={t(lang, "holeTitle", { n: dispNum, name, stones })}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          width: "100%",
-          height: "100%",
-          justifyContent: "space-between",
-          transform: rotate ? "rotate(180deg)" : "none",
-        }}
-      >
-        {isTuzdyk && (
-          <div
-            style={{
-              fontSize: 7,
-              color: "#fff",
-              background: tuzdykColor,
-              padding: "1px 5px",
-              borderRadius: 3,
-              letterSpacing: "0.08em",
-              fontWeight: 700,
-              border: "1px solid rgba(255,255,255,0.2)",
-            }}
-          >
-            ТҰЗДЫҚ
-          </div>
+      <span className="pit-index">{dispNum}</span>
+      {isTuzdyk && (
+        <span
+          className={`pit-badge ${tuzdykOwner === 0 ? "pit-badge--p0" : "pit-badge--p1"}`}
+        >
+          {t(lang, "tuzdyk")}
+        </span>
+      )}
+      <div className={`pit-bowl ${flipContent ? "pit-bowl--flipped" : ""}`}>
+        <StonePile count={stones} />
+      </div>
+      <span className="pit-count" aria-hidden="true">
+        {stones}
+      </span>
+    </button>
+  );
+}
+
+function CentralKazan({ count, label, isActive, color, flipped }) {
+  return (
+    <div
+      className={`kazan-well ${isActive ? "kazan-well--active" : ""} ${flipped ? "kazan-well--flipped" : ""}`}
+      style={{ "--kazan-accent": color }}
+    >
+      <div className="kazan-well__head">
+        <span className="kazan-well__label">{label}</span>
+        <span className="kazan-well__count">{count}</span>
+      </div>
+      <div className="kazan-well__pile">
+        <StonePile count={count <= 49 ? count : 49} />
+        {count > 49 && (
+          <span className="kazan-well__more">+{count - 49}</span>
         )}
-
-        <span
-          style={{
-            fontSize: 9,
-            color: THEME.textMuted,
-            fontFamily: '"Cormorant Garamond", Georgia, serif',
-            fontWeight: 600,
-          }}
-        >
-          {dispNum}
-        </span>
-
-        <span
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: flash ? THEME.goldBright : clickable ? THEME.gold : "#b8956a",
-            fontFamily: '"Cormorant Garamond", Georgia, serif',
-            textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-            lineHeight: 1,
-          }}
-        >
-          {stones}
-        </span>
-
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 1.5,
-            maxWidth: 36,
-            justifyContent: "center",
-            minHeight: 18,
-          }}
-        >
-          {Array.from({ length: Math.min(stones, 8) }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: 6,
-                height: 5.5,
-                borderRadius: "50% 45% 48% 52%",
-                background:
-                  i % 2 === 0
-                    ? "radial-gradient(circle at 32% 28%, #f0ebe3, #a89888 75%)"
-                    : "radial-gradient(circle at 32% 28%, #6b6358, #2a2520 88%)",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.65)",
-                transform: `rotate(${i * 37}deg)`,
-              }}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );
 }
 
-// ─── КАЗАН ───────────────────────────────────────────────────────────────────
-function CentralKazan({ count, label, isActive, color, rotate }) {
-  return (
-    <div
-      style={{
-        flex: 1,
-        height: 58,
-        background:
-          "radial-gradient(ellipse at 50% 15%, #2a1810, #0a0502 95%)",
-        borderRadius: "50% 50% 12px 12px / 40% 40% 12px 12px",
-        border: `2px solid ${isActive ? color : "#301a0b"}`,
-        boxShadow: isActive
-          ? `inset 0 6px 14px rgba(0,0,0,0.9), 0 0 12px ${color}33`
-          : "inset 0 8px 16px rgba(0,0,0,0.95)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 16px",
-        boxSizing: "border-box",
-        transition: "all 0.3s",
-        transform: rotate ? "rotate(180deg)" : "none",
-      }}
-    >
-      <span
-        style={{
-          fontSize: 10,
-          color: THEME.textMuted,
-          letterSpacing: "0.12em",
-          fontFamily: '"Cormorant Garamond", Georgia, serif',
-          fontWeight: 600,
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontSize: 26,
-          fontWeight: 700,
-          color,
-          fontFamily: '"Cormorant Garamond", Georgia, serif',
-          textShadow: "0 2px 6px rgba(0,0,0,0.95)",
-        }}
-      >
-        {count}
-      </span>
-    </div>
-  );
-}
-
-const btnBase = {
-  padding: "7px 14px",
-  borderRadius: 4,
-  cursor: "pointer",
-  fontSize: 12,
-  letterSpacing: "0.04em",
-  fontFamily: "inherit",
-  transition: "background 0.2s, border-color 0.2s",
-};
-
-// ─── ГЛАВНЫЙ КОМПОНЕНТ ───────────────────────────────────────────────────────
 export default function TogyzkumalaqGame() {
+  const [lang, setLang] = useState(loadLang);
   const [board, setBoard] = useState(initBoard);
   const [kazans, setKazans] = useState([0, 0]);
   const [tuzdyk, setTuzdyk] = useState([-1, -1]);
@@ -449,10 +290,22 @@ export default function TogyzkumalaqGame() {
   const [aiThinking, setAiThinking] = useState(false);
   const [scores, setScores] = useState([0, 0]);
 
+  const holeNames = getHoleNames(lang);
   const isPhoneMode = gameMode === "phone";
-  const p1Label = isPhoneMode ? "Ойыншы 2" : "Батыр (ИИ)";
-  const p0Color = THEME.gold;
-  const p1Color = isPhoneMode ? "#7ab8d4" : THEME.crimsonLight;
+  const p1Label = isPhoneMode ? t(lang, "player2") : t(lang, "aiWarrior");
+  const p0Color = THEME.p1;
+  const p1Color = isPhoneMode ? THEME.p2 : THEME.ai;
+  const p2TurnUi = isPhoneMode && currentPlayer === 1;
+
+  useEffect(() => {
+    document.documentElement.lang = lang === "kk" ? "kk" : lang === "ru" ? "ru" : "en";
+    document.title = `${t(lang, "title")} — ${t(lang, "subtitle").split("·")[0].trim()}`;
+  }, [lang]);
+
+  const changeLang = (code) => {
+    setLang(code);
+    saveLang(code);
+  };
 
   const processMove = useCallback(
     (holeIdx) => {
@@ -469,10 +322,12 @@ export default function TogyzkumalaqGame() {
       if (result.captured.length > 0) {
         setFlashHoles(result.captured);
         setStatusMsg(
-          `⚔ Жеңілді: +${result.kazans[currentPlayer] - kazans[currentPlayer]} құмалақ`,
+          t(lang, "capture", {
+            n: result.kazans[currentPlayer] - kazans[currentPlayer],
+          }),
         );
       } else if (result.newTuzdyk) {
-        setStatusMsg("⚡ Тұздық жарияланды!");
+        setStatusMsg(t(lang, "tuzdykDeclared"));
       } else {
         setStatusMsg("");
       }
@@ -501,7 +356,7 @@ export default function TogyzkumalaqGame() {
             return s;
           });
           setStatusMsg(
-            w === 0 ? "🏆 Ойыншы 1 жеңді!" : `🏆 ${p1Label} жеңді!`,
+            w === 0 ? t(lang, "winP1") : t(lang, "winP2", { name: p1Label }),
           );
           setAnimating(false);
           return;
@@ -523,10 +378,10 @@ export default function TogyzkumalaqGame() {
           });
           setStatusMsg(
             w === "draw"
-              ? "🤝 Тең ойын (Атсырау)!"
+              ? t(lang, "draw")
               : w === 0
-                ? "🏆 Ойыншы 1 жеңді!"
-                : `🏆 ${p1Label} жеңді!`,
+                ? t(lang, "winP1")
+                : t(lang, "winP2", { name: p1Label }),
           );
           setAnimating(false);
           return;
@@ -537,19 +392,29 @@ export default function TogyzkumalaqGame() {
         setAnimating(false);
       }, 450);
     },
-    [board, kazans, tuzdyk, currentPlayer, animating, gameOver, p1Label, gameMode],
+    [
+      board,
+      kazans,
+      tuzdyk,
+      currentPlayer,
+      animating,
+      gameOver,
+      p1Label,
+      gameMode,
+      lang,
+    ],
   );
 
   useEffect(() => {
     if (gameMode !== "ai" || currentPlayer !== 1 || gameOver || animating)
       return;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       setAiThinking(false);
       const move = aiPick(board, kazans, tuzdyk, 1, difficulty);
       if (move !== null) processMove(move);
     }, 900);
     return () => {
-      clearTimeout(t);
+      clearTimeout(timer);
       setAiThinking(false);
     };
   }, [
@@ -583,13 +448,13 @@ export default function TogyzkumalaqGame() {
   const oppMoves = validMoves(board, tuzdyk, 1);
 
   const renderHole = (h, isOpp) => (
-    <AuthenticHole
+    <PitCell
       key={h}
       idx={h}
       stones={board[h]}
       clickable={
         (isOpp
-          ? (isPhoneMode && currentPlayer === 1) || false
+          ? isPhoneMode && currentPlayer === 1
           : currentPlayer === 0) &&
         !gameOver &&
         !animating &&
@@ -597,328 +462,187 @@ export default function TogyzkumalaqGame() {
       }
       flash={flashHoles.includes(h)}
       lastMoved={lastMoved === h}
-      tuzdykOwner={
-        tuzdyk[0] === h ? 0 : tuzdyk[1] === h ? 1 : -1
-      }
+      tuzdykOwner={tuzdyk[0] === h ? 0 : tuzdyk[1] === h ? 1 : -1}
       onClick={() => processMove(h)}
-      rotate={isOpp && isPhoneMode}
+      flipContent={isOpp && isPhoneMode}
+      holeNames={holeNames}
+      lang={lang}
     />
   );
 
+  const diffClass =
+    difficulty === 3
+      ? "btn-diff-hard"
+      : difficulty === 2
+        ? "btn-diff-mid"
+        : "btn-diff-easy";
+
+  const turnLabel =
+    currentPlayer === 0
+      ? t(lang, "youP1")
+      : isPhoneMode
+        ? t(lang, "player2")
+        : p1Label;
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "16px 8px 24px",
-        boxSizing: "border-box",
-        position: "relative",
-        zIndex: 1,
-      }}
-    >
-      <SteppeBackground />
+    <div className="game-root">
+      <div className="game-bg" aria-hidden />
 
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+      {showRules && (
+        <RulesModal lang={lang} onClose={() => setShowRules(false)} />
+      )}
 
-      {/* Тақырып — хандық дәуір */}
-      <header style={{ marginBottom: 14, zIndex: 10, maxWidth: 420 }}>
-        <h1
-          style={{
-            margin: "0 0 4px",
-            fontFamily: '"Cormorant Garamond", Georgia, serif',
-            fontSize: "clamp(1.6rem, 5vw, 2.1rem)",
-            fontWeight: 700,
-            color: THEME.gold,
-            letterSpacing: "0.06em",
-            textShadow: "0 2px 8px rgba(0,0,0,0.8)",
-          }}
-        >
-          Тоғызқұмалақ
+      <header className="game-header">
+        <h1 className="game-title">
+          <span className="game-title-accent">{t(lang, "title")}</span>
         </h1>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 11,
-            color: THEME.textMuted,
-            lineHeight: 1.45,
-            fontStyle: "italic",
-          }}
-        >
-          Ұлы дала ойыны · қазақ хандығы дәуірінен бері · 162 құмалақ
-        </p>
+        <p className="game-subtitle">{t(lang, "subtitle")}</p>
       </header>
 
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 6,
-          justifyContent: "center",
-          marginBottom: 12,
-          zIndex: 10,
-        }}
-      >
-        <button
-          onClick={reset}
-          style={{
-            ...btnBase,
-            background: THEME.woodMid,
-            border: `1px solid ${THEME.gold}`,
-            color: THEME.goldBright,
-          }}
-        >
-          Жаңа ойын
+      <div className="toolbar">
+        <div className="lang-switch" role="group" aria-label="Language">
+          {Object.entries(LANGUAGES).map(([code, label]) => (
+            <button
+              key={code}
+              type="button"
+              className={`lang-btn ${lang === code ? "active" : ""}`}
+              onClick={() => changeLang(code)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <button type="button" className="btn btn-primary" onClick={reset}>
+          {t(lang, "newGame")}
         </button>
 
         <button
+          type="button"
+          className="btn btn-ghost"
           onClick={() => {
             setGameMode(gameMode === "ai" ? "phone" : "ai");
             reset();
           }}
-          style={{
-            ...btnBase,
-            background: THEME.felt,
-            border: `1px solid ${THEME.woodLight}`,
-            color: THEME.text,
-          }}
         >
-          {gameMode === "ai" ? "🤖 ИИ-ға қарсы" : "📱 Екі ойыншы"}
+          {gameMode === "ai" ? t(lang, "modeAi") : t(lang, "modePhone")}
         </button>
 
         {gameMode === "ai" && (
           <button
+            type="button"
+            className={`btn btn-ghost ${diffClass}`}
             onClick={() => setDifficulty((d) => (d === 3 ? 1 : d + 1))}
-            style={{
-              ...btnBase,
-              background: THEME.felt,
-              border: `1px solid ${THEME.woodLight}`,
-              color:
-                difficulty === 3
-                  ? THEME.crimsonLight
-                  : difficulty === 2
-                    ? THEME.goldBright
-                    : "#7cb89a",
-            }}
           >
             {difficulty === 3
-              ? "Хан (қиын)"
+              ? t(lang, "diffHard")
               : difficulty === 2
-                ? "Сарбаз (орта)"
-                : "Бала (жеңіл)"}
+                ? t(lang, "diffMid")
+                : t(lang, "diffEasy")}
           </button>
         )}
 
         <button
+          type="button"
+          className="btn btn-muted"
           onClick={() => setShowRules(true)}
-          style={{
-            ...btnBase,
-            background: "transparent",
-            border: `1px solid ${THEME.woodLight}`,
-            color: THEME.textMuted,
-          }}
         >
-          Ережелер
+          {t(lang, "rules")}
         </button>
       </div>
 
-      <div
-        style={{
-          marginBottom: 14,
-          fontSize: 12.5,
-          color: THEME.text,
-          padding: "6px 18px",
-          background: "rgba(10, 6, 3, 0.85)",
-          borderRadius: 20,
-          border: `1px solid ${THEME.woodMid}`,
-          textAlign: "center",
-          minWidth: 260,
-          zIndex: 10,
-          backdropFilter: "blur(4px)",
-        }}
-      >
+      <div className="status-pill">
         {gameOver ? (
-          <strong style={{ color: THEME.goldBright }}>{statusMsg}</strong>
+          <strong style={{ color: THEME.p1 }}>{statusMsg}</strong>
         ) : aiThinking ? (
-          <span style={{ color: p1Color }}>Батыр ойланып жатыр…</span>
+          <span style={{ color: p1Color }}>{t(lang, "aiThinking")}</span>
         ) : (
-          <span>
-            Жүріс:{" "}
-            <strong style={{ color: currentPlayer === 0 ? p0Color : p1Color }}>
-              {currentPlayer === 0 ? "ОЙЫНШЫ 1 (СІЗ)" : p1Label.toUpperCase()}
-            </strong>
-            {statusMsg && (
-              <span style={{ color: THEME.gold, marginLeft: 8 }}>
-                {statusMsg}
-              </span>
+          <>
+            <span>
+              {t(lang, "turn")}:{" "}
+              <strong style={{ color: currentPlayer === 0 ? p0Color : p1Color }}>
+                {turnLabel}
+              </strong>
+              {statusMsg && (
+                <span style={{ color: THEME.p1Bright, marginLeft: 8 }}>
+                  {statusMsg}
+                </span>
+              )}
+            </span>
+            {p2TurnUi && (
+              <span className="phone-hint">{t(lang, "phoneHint")}</span>
             )}
-          </span>
+          </>
         )}
       </div>
 
-      {/* Ағаш тақта */}
-      <div
-        style={{
-          background: `
-            linear-gradient(145deg, #4a3018 0%, #2d1a0c 35%, #1a0c04 70%, #120804 100%)
-          `,
-          borderRadius: 20,
-          padding: "12px 12px 16px",
-          border: "6px solid #0d0602",
-          outline: `2px solid ${THEME.woodLight}`,
-          outlineOffset: -4,
-          boxShadow:
-            "0 28px 56px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,220,160,0.08)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <OrnamentBorder position="top" />
+      <div className="board-arena">
+        <div className="board-arena__rim" aria-hidden />
+        <section className="board-lane board-lane--far" aria-label={t(lang, "player2")}>
+          <div className="pit-track">
+            {topRowIndices.map((h) => renderHole(h, true))}
+          </div>
+        </section>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            justifyContent: "center",
-            transform: isPhoneMode ? "rotate(180deg)" : "none",
-            transition: "transform 0.5s",
-          }}
-        >
-          {topRowIndices.map((h) => renderHole(h, true))}
-        </div>
+        <section className="board-channel" aria-label={t(lang, "dividerTitle")}>
+          <div className="board-channel__line" aria-hidden />
+          <div className="board-channel__wells">
+            <CentralKazan
+              count={kazans[1]}
+              label={isPhoneMode ? t(lang, "kazan2") : t(lang, "kazanAi")}
+              isActive={currentPlayer === 1}
+              color={p1Color}
+              flipped={p2TurnUi}
+            />
+            <CentralKazan
+              count={kazans[0]}
+              label={t(lang, "kazan1")}
+              isActive={currentPlayer === 0}
+              color={p0Color}
+              flipped={false}
+            />
+          </div>
+        </section>
 
-        <div
-          style={{
-            background: THEME.felt,
-            padding: "10px 10px",
-            borderRadius: 14,
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-            border: `1px solid ${THEME.woodMid}`,
-            boxShadow: "inset 0 4px 10px rgba(0,0,0,0.75)",
-          }}
-        >
-          <CentralKazan
-            count={kazans[1]}
-            label={isPhoneMode ? "ҚАЗАН II" : "ҚАЗАН БАТЫР"}
-            isActive={currentPlayer === 1}
-            color={p1Color}
-            rotate={isPhoneMode}
-          />
-          <div
-            title="Белдеу — орталық бөлу"
-            style={{
-              width: 5,
-              height: 44,
-              background: `linear-gradient(180deg, ${THEME.gold}, ${THEME.woodDark})`,
-              borderRadius: 2,
-              flexShrink: 0,
-            }}
-          />
-          <CentralKazan
-            count={kazans[0]}
-            label="ҚАЗАН I"
-            isActive={currentPlayer === 0}
-            color={p0Color}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-          {bottomRowIndices.map((h) => renderHole(h, false))}
-        </div>
-
-        <OrnamentBorder position="bottom" />
+        <section className="board-lane board-lane--near" aria-label={t(lang, "player1")}>
+          <div className="pit-track">
+            {bottomRowIndices.map((h) => renderHole(h, false))}
+          </div>
+        </section>
       </div>
 
-      <div
-        style={{
-          marginTop: 16,
-          display: "flex",
-          gap: 36,
-          color: THEME.textMuted,
-          fontSize: 12,
-          fontWeight: 700,
-          zIndex: 10,
-        }}
-      >
-        <span>
-          Ойыншы 1:{" "}
+      <div className="score-row">
+        <span className="score-chip">
+          {t(lang, "player1")}:{" "}
           <strong style={{ color: p0Color }}>{scores[0]}</strong>
         </span>
-        <span>
+        <span className="score-chip">
           {p1Label}: <strong style={{ color: p1Color }}>{scores[1]}</strong>
         </span>
       </div>
 
       {gameOver && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(4, 2, 1, 0.88)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 150,
-          }}
-        >
-          <div
-            style={{
-              background: `linear-gradient(160deg, ${THEME.woodMid}, ${THEME.woodDark})`,
-              border: `2px solid ${THEME.gold}`,
-              borderRadius: 12,
-              padding: "28px 36px",
-              textAlign: "center",
-              maxWidth: 340,
-              boxShadow: "0 24px 48px rgba(0,0,0,0.9)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 28,
-                marginBottom: 8,
-                color: THEME.gold,
-                fontFamily: '"Cormorant Garamond", serif',
-              }}
-            >
-              ☽
-            </div>
-            <h2
-              style={{
-                color: THEME.goldBright,
-                margin: "0 0 10px",
-                fontFamily: '"Cormorant Garamond", Georgia, serif',
-                fontSize: 22,
-              }}
-            >
-              {statusMsg}
-            </h2>
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <div className="modal-icon">☽</div>
+            <h2 className="modal-title">{statusMsg}</h2>
             {finalKazans && (
-              <p style={{ color: THEME.text, fontSize: 13, marginTop: 0 }}>
-                Құмалақ: Ойыншы 1 — {finalKazans[0]} | {p1Label} —{" "}
-                {finalKazans[1]}
+              <p className="modal-text">
+                {t(lang, "finalScore", {
+                  p1: t(lang, "player1"),
+                  s1: finalKazans[0],
+                  p2: p1Label,
+                  s2: finalKazans[1],
+                })}
               </p>
             )}
             <button
+              type="button"
+              className="btn btn-primary"
+              style={{ marginTop: 16, width: "100%" }}
               onClick={reset}
-              style={{
-                ...btnBase,
-                marginTop: 12,
-                background: THEME.woodLight,
-                border: `1px solid ${THEME.gold}`,
-                color: THEME.goldBright,
-                fontWeight: 700,
-                padding: "10px 28px",
-              }}
             >
-              Қайта ойнау
+              {t(lang, "playAgain")}
             </button>
           </div>
         </div>
@@ -927,118 +651,32 @@ export default function TogyzkumalaqGame() {
   );
 }
 
-// ─── ЕРЕЖЕЛЕР ────────────────────────────────────────────────────────────────
-function RulesModal({ onClose }) {
-  const rules = [
-    [
-      "🎯 Мақсат",
-      "Өз қазаныңызға кемінде 82 құмалақ жинау. Барлығы 162 — Ұлы дала санындағы толық ойын.",
-    ],
-    [
-      "📱 Екі ойыншы",
-      "Бір экранда кезекпен: Ойыншы 2 кезегінде жоғарғы қатар мен қазан сізге қарай айналады — нақты тақта сияқты.",
-    ],
-    [
-      "♟ Жүріс",
-      "Отаудан бір құмалақ қалдырылады, қалғандары сағат тілінің кері бағытында бір-бірден таратылады. Бір құмалақ болса — көршілес отауға көшеді.",
-    ],
-    [
-      "⚔ Жеңу",
-      "Соңғы құмалақ қарсы жақтағы отауда тасты санын жұп етсе — барлық құмалақ қазаныңызға.",
-    ],
-    [
-      "⚡ Тұздық",
-      "Соңғы тасты қарсы отауда дәл 3 құмалақ қалдырса — отау мәңгілік Тұздық болады; одан өткен әр тас қазаныңызға түседі.",
-    ],
-  ];
+function RulesModal({ lang, onClose }) {
+  const rules = getRules(lang);
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.82)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 200,
-        backdropFilter: "blur(6px)",
-      }}
-    >
+    <div className="rules-overlay" onClick={onClose} role="presentation">
       <div
+        className="rules-card"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: `linear-gradient(160deg, #2d1809, ${THEME.woodDark})`,
-          border: `2px solid ${THEME.woodLight}`,
-          borderRadius: 10,
-          padding: 26,
-          maxWidth: 460,
-          width: "92%",
-          color: THEME.text,
-          fontFamily: '"Cormorant Garamond", Georgia, serif',
-          maxHeight: "85vh",
-          overflowY: "auto",
-          boxShadow: "0 24px 48px rgba(0,0,0,0.92)",
-        }}
+        role="dialog"
+        aria-modal="true"
       >
-        <h3
-          style={{
-            color: THEME.gold,
-            marginTop: 0,
-            textAlign: "center",
-            letterSpacing: "0.1em",
-            fontSize: 20,
-            fontWeight: 700,
-          }}
-        >
-          КОШЕВНИК КОДЕКСІ
-        </h3>
-        <p
-          style={{
-            textAlign: "center",
-            fontSize: 12,
-            color: THEME.textMuted,
-            marginTop: -8,
-            marginBottom: 18,
-            fontStyle: "italic",
-          }}
-        >
-          Алтын Орда мен қазақ хандығы дәуірінен бері даланың ақыл ойыны
-        </p>
+        <h3>{t(lang, "rulesTitle")}</h3>
+        <p className="rules-intro">{t(lang, "rulesIntro")}</p>
         {rules.map(([title, text]) => (
-          <div key={title} style={{ marginBottom: 14, textAlign: "left" }}>
-            <div
-              style={{
-                color: THEME.goldBright,
-                fontWeight: 700,
-                fontSize: 14,
-                marginBottom: 4,
-              }}
-            >
-              {title}
-            </div>
-            <div style={{ fontSize: 13, lineHeight: 1.55, color: "#c4a882" }}>
-              {text}
-            </div>
+          <div key={title} className="rules-block">
+            <div className="rules-block-title">{title}</div>
+            <p className="rules-block-text">{text}</p>
           </div>
         ))}
         <button
+          type="button"
+          className="btn btn-primary"
+          style={{ width: "100%", marginTop: 8 }}
           onClick={onClose}
-          style={{
-            width: "100%",
-            padding: 10,
-            marginTop: 8,
-            background: THEME.woodLight,
-            border: `1px solid ${THEME.gold}`,
-            color: THEME.goldBright,
-            cursor: "pointer",
-            borderRadius: 4,
-            fontWeight: 700,
-            fontFamily: "inherit",
-          }}
         >
-          Тақтаға оралу
+          {t(lang, "rulesClose")}
         </button>
       </div>
     </div>
